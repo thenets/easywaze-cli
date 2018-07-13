@@ -20,11 +20,6 @@ RUN set -x \
     && echo 'export PS1="\e[1m\e[91mGodOfWar\e[39m:\e[96m\w\e[0m# "' > /root/.bashrc \
     # Colorful limited user bash
     && echo 'export PS1="\e[1m\e[32m\\u\e[39m@\e[34masgard\e[39m:\e[96m\w\e[0m$ "' > $USER_HOME/.bashrc \
-    # Fix permissions
-    && chown -R $USER_NAME.$USER_NAME $USER_HOME
-
-# Install pyenv
-RUN set -x \
     # HACK Alias from 'python' tp 'python3'
     && ln -s /usr/bin/python3 /usr/bin/python \
     # HACK to fix volume permissions
@@ -35,7 +30,9 @@ RUN set -x \
     && echo '    virtualenv -p python3 venv' >> $USER_HOME/.bashrc \
     && echo '    cd -' >> $USER_HOME/.bashrc \
     && echo 'fi' >> $USER_HOME/.bashrc \
-    && echo 'source $USER_HOME/.pyenv/versions/venv/bin/activate' >> $USER_HOME/.bashrc
+    && echo 'source $USER_HOME/.pyenv/versions/venv/bin/activate' >> $USER_HOME/.bashrc \
+    # Fix permissions
+    && chown -R $USER_NAME.$USER_NAME $USER_HOME
 
 WORKDIR $APP
 ADD ./entrypoint.sh /
