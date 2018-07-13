@@ -2,21 +2,30 @@
 
 source $USER_HOME/.bashrc
 
-set -x
+# Main vars
+ROOT_PATH=$(pwd)
+VENV_PATH=$USER_HOME/.pyenv/versions/venv
+SRC_PATH=src/
+PIP_FILE=/app/requirements.txt
 
-# # Create virtualenv
-# if [ ! -f $USER_HOME/.pyenv/versions/venv ]; then 
-#     cd $USER_HOME/.pyenv/versions
-#     virtualenv -p python3 venv
-#     cd -
-# fi
+# Install dependencies
+if [ -f $PIP_FILE ]; then
+    md5_cache_file=$VENV_PATH/pip_md5.cache
+    touch $md5_cache_file
+    md5_cached=($(cat $md5_cache_file))
+    md5=($(md5sum $PIP_FILE))
 
-# # Activate virtualenv
-# source $USER_HOME/.pyenv/versions/venv/bin/activate
-
-# # Update libs
-# pip install -r requirements.txt
+    # Install dependencies if not cached
+    if [ ! "$md5" = "$md5_cached"  ]; then
+        echo -e "$COLOR_CYAN# BAIXANDO DEPENDÊNCIAS$COLOR_DEFAULT"
+        pip install -r $PIP_FILE
+        echo ""
+        # cache new hash
+        echo $md5 > $md5_cache_file
+    fi
+fi
 
 # Run Python code
+set -x
 python main.py
 

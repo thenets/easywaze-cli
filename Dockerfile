@@ -34,7 +34,7 @@ RUN set -x \
     # HACK to fix volume permissions
     && mkdir -p $USER_HOME/.pyenv/versions \
     # Create and start venv
-    && echo 'if [ ! -f $USER_HOME/.pyenv/versions/venv ]; then ' >> $USER_HOME/.bashrc \
+    && echo 'if [ ! -d $USER_HOME/.pyenv/versions/venv ]; then ' >> $USER_HOME/.bashrc \
     && echo '    cd $USER_HOME/.pyenv/versions' >> $USER_HOME/.bashrc \
     && echo '    virtualenv -p python3 venv' >> $USER_HOME/.bashrc \
     && echo '    cd -' >> $USER_HOME/.bashrc \
