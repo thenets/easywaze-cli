@@ -1,23 +1,18 @@
-FROM python:3.6.5-alpine3.7
+FROM ubuntu:18.04
 
 ENV USER_NAME=kratos
 ENV USER_HOME=/home/$USER_NAME
 ENV APP=/app
 
-USER root
-
-RUN set -x && \
-    # Install main packages
-    apk add --no-cache git tar zip unzip bash make curl wget
+RUN apt-get update && apt-get install -y \
+        aufs-tools automake build-essential curl dpkg-sig libcap-dev \
+        libsqlite3-dev virtualenv wget \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create user
-RUN adduser -D -u 501 -s /bin/bash $USER_NAME
-
-# Create projeto dir
 RUN set -x \
-    && mkdir -p $APP \
-    && mkdir -p $USER_HOME \
-    && chown -R $USER_NAME.$USER_NAME $APP $USER_HOME
+    && groupadd -r -g 1000 $USER_NAME \
+    && useradd -mr -c $USER_NAME -d $USER_HOME -g 1000 -u 1000 $USER_NAME
 
 # Bash setup
 RUN set -x \
@@ -28,31 +23,23 @@ RUN set -x \
     # Fix permissions
     && chown -R $USER_NAME.$USER_NAME $USER_HOME
 
-# Python dependencies
-RUN set -x \
-    # MySQL / MariaDB
-    && apk add --update --no-cache --virtual \
-	    mariadb-client-libs build-deps mariadb-dev \
-        gcc musl-dev mysql-client py-mysqldb \
-    # pyenv dependencies
-    && apk add --no-cache --update \
-        build-base patch ca-certificates bzip2-dev linux-headers \
-        ncurses-dev openssl openssl-dev readline-dev sqlite-dev
+RUN apt-get update && apt-get install -y \
+        git \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install pyenv
-USER $USER_NAME
 RUN set -x \
-    && cd /tmp \
-    && wget https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer \
-    && chmod +x pyenv-installer \
-    && ./pyenv-installer \
-    && echo 'export PATH="$HOME/.pyenv/bin:$PATH"' >> ~/.bashrc \
-    && echo 'eval "$(pyenv init -)"' >> ~/.bashrc \
-    && echo 'eval "$(pyenv virtualenv-init -)"' >> ~/.bashrc \
-    && echo 'export PYENV_VIRTUALENV_DISABLE_PROMPT=1' >> ~/.bashrc \
+    # HACK Alias from 'python' tp 'python3'
+    && ln -s /usr/bin/python3 /usr/bin/python \
     # HACK to fix volume permissions
-    && mkdir -p $HOME/.pyenv/versions
-USER root
+    && mkdir -p $USER_HOME/.pyenv/versions \
+    # Create and start venv
+    && echo 'if [ ! -f $USER_HOME/.pyenv/versions/venv ]; then ' >> $USER_HOME/.bashrc \
+    && echo '    cd $USER_HOME/.pyenv/versions' >> $USER_HOME/.bashrc \
+    && echo '    virtualenv -p python3 venv' >> $USER_HOME/.bashrc \
+    && echo '    cd -' >> $USER_HOME/.bashrc \
+    && echo 'fi' >> $USER_HOME/.bashrc \
+    && echo 'source $USER_HOME/.pyenv/versions/venv/bin/activate' >> $USER_HOME/.bashrc
 
 WORKDIR $APP
 ADD ./entrypoint.sh /

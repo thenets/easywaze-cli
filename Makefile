@@ -12,8 +12,12 @@ VOLUME_PATH=-v $(PWD)/$(SOURCE_PATH)/:/app/ \
 prepare:
 	# Build Docker image
 	make build 
-	# Create volume for venv
+	# Create volume for venv and fix permissions
 	docker volume create waze-venv || true
+	docker run --rm -it \
+		$(VOLUME_PATH) \
+		--entrypoint="" \
+		$(NAME):$(TAG) chown 1000.1000 /home/kratos/.pyenv/versions
 	# Create database volume and dependencies
 	make database
 
@@ -41,6 +45,7 @@ start: basics
 	docker run --rm -it \
 		$(VOLUME_PATH) \
 		-p 6000:6000 \
+		--user=$(USER_NAME) \
 		--network waze-ccp \
 		$(NAME):$(TAG)
 
