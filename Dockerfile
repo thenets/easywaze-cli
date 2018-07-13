@@ -6,7 +6,7 @@ ENV APP=/app
 
 RUN apt-get update && apt-get install -y \
         aufs-tools automake build-essential curl dpkg-sig libcap-dev \
-        libsqlite3-dev virtualenv wget \
+        libsqlite3-dev virtualenv wget nano git \
     && rm -rf /var/lib/apt/lists/*
 
 # Create user
@@ -22,10 +22,6 @@ RUN set -x \
     && echo 'export PS1="\e[1m\e[32m\\u\e[39m@\e[34masgard\e[39m:\e[96m\w\e[0m$ "' > $USER_HOME/.bashrc \
     # Fix permissions
     && chown -R $USER_NAME.$USER_NAME $USER_HOME
-
-RUN apt-get update && apt-get install -y \
-        git \
-    && rm -rf /var/lib/apt/lists/*
 
 # Install pyenv
 RUN set -x \
