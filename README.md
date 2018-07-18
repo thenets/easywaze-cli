@@ -1,4 +1,4 @@
-# waze-ccp-cli
+# easywaze
 
 Para montar faça
 
