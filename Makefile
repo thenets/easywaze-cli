@@ -1,4 +1,4 @@
-NAME = waze-ccp/capture
+NAME = thenets/easywaze
 TAG = latest
 SHELL = /bin/bash
 
@@ -24,7 +24,8 @@ prepare:
 	make db
 
 build: basics
-	docker build -t $(NAME):$(TAG) --rm .
+	docker build -t $(NAME):$(TAG) -f cli/docker/python.dockerfile --rm .
+	docker build -t $(NAME):$(TAG) -f cli/docker/supervisor.dockerfile --rm .
 
 shell: basics
 	@docker run --rm -it \
