@@ -1,6 +1,15 @@
-Para montar faça:
+# easywaze
 
+Para montar faça
+
+```
 make
+
 make shell
-pip install - requirements.txt
-python3 main.py
+
+pip install -r requirements
+
+python main.py
+```
+
+Acesse `localhost:5000` com `root` e `root` e confira se os dados foram capturados
