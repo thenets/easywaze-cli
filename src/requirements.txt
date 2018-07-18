@@ -1,3 +1,5 @@
 requests
 pymysql
 SQLAlchemy
+pyyaml
+py-dateutil
