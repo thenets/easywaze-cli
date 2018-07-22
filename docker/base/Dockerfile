@@ -35,7 +35,7 @@ RUN set -x \
     && chown -R $USER_NAME.$USER_NAME $USER_HOME
 
 WORKDIR $APP
-ADD ./entrypoint.sh /
+ADD *.sh /
 ENTRYPOINT ["/entrypoint.sh"]
 
 VOLUME ['/home/kratos/.pyenv/versions']

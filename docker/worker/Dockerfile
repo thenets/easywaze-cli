@@ -1,0 +1,1 @@
+FROM thenets/easywaze:latest
