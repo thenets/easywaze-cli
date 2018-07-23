@@ -8,7 +8,7 @@ from dateutil import tz
 
 
 def create_engine():
-    return sa.create_engine("mysql+pymysql://root:root@db:3306")
+    return sa.create_engine("mysql+pymysql://root:root@easywaze-mysql:3306")
 
 
 def create_tables(engine):

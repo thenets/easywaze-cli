@@ -24,7 +24,11 @@ prepare:
 		--entrypoint="" \
 		$(NAME):$(TAG) chown 1000.1000 /home/kratos/.pyenv/versions
 	# Create database volume and dependencies
-	make db
+	make services
+
+	@echo ""
+	@echo -e "\e[32mAll services working!\e[0m"
+	@echo "$$SERVICES_INSTRUCTIONS"
 
 # Docker builds
 # ==============================
@@ -41,7 +45,7 @@ shell: basics
 		$(VOLUME_PATH) \
 		--entrypoint="" \
 		--user=$(USER_NAME) \
-		--network $(APP_NAME)-ccp \
+		--network $(APP_NAME) \
 		--name $(APP_NAME)-shell-$$RANDOM \
 		$(NAME):$(TAG) $(SHELL)
 
@@ -51,7 +55,7 @@ shell-root: basics
 		$(VOLUME_PATH) \
 		--entrypoint="" \
 		--name $(APP_NAME)-shellroot-$$RANDOM \
-		--network $(APP_NAME)-ccp \
+		--network $(APP_NAME) \
 		$(NAME):$(TAG) $(SHELL)
 
 
@@ -62,17 +66,61 @@ start-master: basics
 		$(VOLUME_PATH) \
 		-p 6000:6000 \
 		--user=$(USER_NAME) \
-		--network $(APP_NAME)-ccp \
+		--network $(APP_NAME) \
 
 # Dependencies
 # ==============================
-db:
-	@echo -e "\e[32mPreparing MySQL database...\e[0m"
-	@docker volume create $(APP_NAME)-ccp_database || true
-	@docker network create $(APP_NAME)-ccp || true
-	@docker rm -f  db $(APP_NAME)-ccp-phpmyadmin || true
-	@docker run -d --name db --network=$(APP_NAME)-ccp -e MYSQL_ROOT_PASSWORD="root" -v $(APP_NAME)-ccp_database:/var/lib/mysql mysql:5.7.22
-	@docker run -d --name $(APP_NAME)-ccp-phpmyadmin -p 8000:80 --network=$(APP_NAME)-ccp phpmyadmin/phpmyadmin:edge
+define SERVICES_INSTRUCTIONS
+- MySQL
+| name : $(APP_NAME)-mysql
+| user : root
+| pass : root
+| db   : $(APP_NAME)
+| port : 23306
+- phpMyAdmin
+| name : $(APP_NAME)-phpmyadmin
+| addr : http://127.0.0.1:8000/
+- PostGIS
+| name : $(APP_NAME)-postgis
+| user : root
+| pass : root
+| db   : $(APP_NAME)
+| port : 25432
+endef
+export SERVICES_INSTRUCTIONS
+services:
+	@# Create network
+	@echo -e "\e[32mCreating network...\e[0m"
+	@docker network create $(APP_NAME) >/dev/null 2>/dev/null || true
+
+	@# Added MySQL and phpMyAdmin
+	@echo -e "\e[32mPreparing MySQL database and phpMyAdmin...\e[0m"
+	@docker rm -f $(APP_NAME)-mysql $(APP_NAME)-phpmyadmin >/dev/null 2>/dev/null || true
+	@docker volume create $(APP_NAME)-mysql >/dev/null 2>/dev/null || true
+	@echo -n $(APP_NAME)-mysql: 
+	@docker run -d --name $(APP_NAME)-mysql --network=$(APP_NAME) \
+				-e MYSQL_ROOT_PASSWORD="root" \
+				-e MYSQL_DATABASE=$(APP_NAME) \
+				-v $(APP_NAME)-mysql:/var/lib/mysql \
+				-p 23306:3306 mysql:5.7.22
+	@echo -n $(APP_NAME)-phpmyadmin:
+	@docker run -d --name $(APP_NAME)-phpmyadmin -p 8000:80 \
+				--network=$(APP_NAME) \
+				-e PMA_HOST=$(APP_NAME)-mysql \
+				phpmyadmin/phpmyadmin:edge
+
+	@# Postgis
+	@echo -e "\e[32mPreparing PostGIS database...\e[0m"
+	@docker rm -f $(APP_NAME)-postgis >/dev/null 2>/dev/null || true
+	@docker volume create $(APP_NAME)-postgis >/dev/null 2>/dev/null || true
+	@echo -n $(APP_NAME)-postgis:
+	@docker run --name $(APP_NAME)-postgis --network=$(APP_NAME) \
+				-e POSTGRES_USER=root \
+				-e POSTGRES_PASS=root \
+				-e POSTGRES_DBNAME=$(APP_NAME) \
+				-e ALLOW_IP_RANGE=0.0.0.0/0 \
+				-v $(APP_NAME)-postgis:/var/lib/postgresql \
+				-p 25432:5432 -d -t kartoza/postgis
 
 # Tools
 # ==============================
@@ -84,3 +132,4 @@ repair:
 	docker rm -f db $(docker container ls -af name=$(APP_NAME)) 2>/dev/null || true
 	make basics
 	make db
+	
