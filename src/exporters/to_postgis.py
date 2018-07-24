@@ -30,10 +30,11 @@ from dateutil import tz
 import datetime
 from sqlalchemy import (VARCHAR, Text, BigInteger, INTEGER, TIMESTAMP, JSON, 
                         BOOLEAN, Column, Float, ForeignKey, DateTime)
+import fire
 
 # Local imports
 from app.utils import create_postgis_engine
-from export import Export
+from prepare import Export
 from to_json import Json
 
 class Postgis(Json):
@@ -535,4 +536,6 @@ class Postgis(Json):
 
         self.clear_json()
 
-a = Postgis().to_postgis()
+if __name__ == '__main__':
+
+    fire.Fire(Postgis)

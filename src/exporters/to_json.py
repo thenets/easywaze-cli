@@ -21,17 +21,18 @@ self.name -- string :: name of the export base on the time range
 self.output_path -- string :: dump path 
 '''
 
-from export import Export
+from prepare import Export
 import sqlalchemy as sa
 import os
 import errno
 import shutil
 import json
+import fire
 
 
 class Json(Export):
 
-    def to_json(self, output_path='app/dumps/json/'):
+    def to_json(self):
         """Dump files from MySql in json format. 
             It saves the files at:
                 'app/dumps/json/<initial-date>--to--<final-date>/'
@@ -40,7 +41,9 @@ class Json(Export):
         Keyword Arguments:
             output_path {str} -- dump path (default: {'app/dumps/json/'})
         """
-        self.output_path = self.create_pathname(output_path)
+
+        self.output_path = self.output_path + 'json/'
+        self.output_path = self.create_pathname(self.output_path)
 
         # Create path if it does not exists
         try:
@@ -73,8 +76,6 @@ class Json(Export):
 
         shutil.rmtree(self.output_path)
 
+if __name__ == '__main__':
 
-    
-
-
-#a = To_json().export()
+    fire.Fire(Json)
