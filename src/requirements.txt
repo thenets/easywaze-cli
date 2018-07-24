@@ -3,3 +3,4 @@ pymysql
 SQLAlchemy
 pyyaml
 py-dateutil
+psycopg2
