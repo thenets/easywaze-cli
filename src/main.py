@@ -6,6 +6,9 @@ import json
 import datetime
 from dateutil import tz
 
+# Local imports
+from utils import create_mysql_engine
+
 
 def create_engine():
     return sa.create_engine("mysql+pymysql://root:root@easywaze-mysql:3306")
@@ -18,6 +21,7 @@ def create_tables(engine):
     except:
         pass
     engine.execute("USE waze")
+    # TODO: change time zone
     engine.execute("SET GLOBAL time_zone = 'America/Sao_Paulo'")
 
     # Try to create table if not exist
@@ -31,7 +35,7 @@ def create_tables(engine):
             Column("end_time_millis",     BigInteger),
             Column("start_time",          DATETIME),
             Column("end_time",            DATETIME),
-            Column("city",                String(255)),
+            Column("timezone",            String(255)),
             Column("raw_json",            JSON)
             )
 
@@ -51,7 +55,7 @@ def get_timezone(url):
 
 def load_yaml():
 
-    res = yaml.load(open('polygons.yaml', 'r'))
+    res = yaml.load(open('app/polygons.yaml', 'r'))
     for i, city in enumerate(res['cities']):
     
         if 'url' not in city.keys():
@@ -93,7 +97,7 @@ def insert_data(data, city, tables, engine):
                             strptime(data['endTime'],'%Y-%m-%d %H:%M:%S:%f').
                             replace(tzinfo=from_zone).
                             astimezone(to_zone)),
-                city=city['name'],
+                timezone=city['timezone'],
                 raw_json=data[table])
             conn = engine.connect()
             conn.execute(ins)
@@ -104,7 +108,7 @@ def insert_data(data, city, tables, engine):
 def main():
     
     # Create engine
-    engine = create_engine()
+    engine = create_mysql_engine()
     tables = create_tables(engine)
 
     cities = load_yaml()

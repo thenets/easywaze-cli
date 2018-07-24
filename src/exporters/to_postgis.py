@@ -1,0 +1,446 @@
+import sqlalchemy as sa
+from glob import glob
+import json
+from dateutil import tz
+import datetime
+from sqlalchemy import (VARCHAR, Text, BigInteger, INTEGER, TIMESTAMP, JSON, 
+                        BOOLEAN, Column, Float, ForeignKey, DateTime)
+
+# Local imports
+from app.utils import create_postgis_engine
+from export import Export
+from to_json import Json
+
+class Postgis(Json):
+
+    def init_postigis(self):
+
+        try:
+            self.engine_postgis.execute("CREATE SCHEMA waze") #create db
+        except:
+            pass
+
+        metadata = sa.MetaData(self.engine_postgis)
+        self.tables_postgis = {}
+
+        metadata = sa.MetaData(self.engine_postgis)
+        
+        for table in self.tables:
+            self.tables_postgis[table + 'raw'] = sa.Table(
+                table, metadata,
+                Column("id",                         INTEGER, nullable=False),
+                Column("timestamp",                  DateTime, nullable=False),
+                Column("city",                       Text, nullable=False),
+                Column("raw_json",                   Text, nullable=False),
+                schema='raw_import',)
+
+
+        self.tables_postgis['alerts'] = sa.Table(
+            'alerts', metadata,
+            Column("id",                              INTEGER,
+                                                      primary_key=True,),
+            Column("uuid",                            Text, nullable=False),
+            Column("pub_millis",                      BigInteger, nullable=False),
+            Column("pub_utc_date",                    TIMESTAMP),
+            Column("road_type",                       INTEGER),
+            Column("location",                        JSON),
+            Column("street",                          Text),
+            Column("city",                            Text),
+            Column("country",                         Text),
+            Column("magvar",                          INTEGER),
+            Column("reliability",                     INTEGER),
+            Column("report_description",              Text),
+            Column("report_rating",                   INTEGER),
+            Column("confidence",                      INTEGER),
+            Column("type",                            Text),
+            Column("subtype",                         Text),
+            Column("report_by_municipality_user",     BOOLEAN),
+            Column("thumbs_up",                       INTEGER),
+            Column("jam_uuid",                        Text),
+            Column("datafile_id",                     BigInteger, nullable=False), 
+            schema='waze',)
+
+        self.tables_postgis['jams'] = sa.Table(
+            'jams', metadata,
+            Column("id",                              INTEGER, 
+                                                      primary_key=True,
+                                                      nullable=False),
+            Column("uuid",                            Text,
+                                                      nullable=False),
+            Column("pub_millis",                      BigInteger,
+                                                      nullable=False),
+            Column("pub_utc_date",                    TIMESTAMP),
+            Column("start_node",                      Text),
+            Column("end_node",                        Text),
+            Column("road_type",                       INTEGER),
+            Column("street",                          Text),
+            Column("city",                            Text),
+            Column("country",                         Text),
+            Column("delay",                           INTEGER),
+            Column("speed",                           Float),
+            Column("speed_kmh",                       Float),
+            Column("length",                          INTEGER),
+            Column("turn_type",                       Text),
+            Column("level",                           INTEGER),
+            Column("blocking_alert_id",               Text),
+            Column("line",                            JSON),
+            Column("type",                            Text),
+            Column("turn_line",                       JSON),
+            Column("datafile_id",                     BigInteger,
+                                                      nullable=False),
+            schema='waze',)   
+
+        self.tables_postgis['irregularities'] = sa.Table(
+            'irregularities', metadata,
+            Column("id",                              INTEGER,
+                                                      primary_key=True,
+                                                      nullable=False),
+            Column("uuid",                            Text,
+                                                      nullable=False),
+            Column("detection_date_millis",           BigInteger, nullable=False),
+            Column("detection_date",                  Text),
+            Column("detection_utc_date",              TIMESTAMP),
+            Column("update_date_millis",              BigInteger,nullable=False),
+            Column("update_date",                     Text),
+            Column("update_utc_date",                 TIMESTAMP),
+            Column("street",                          Text),
+            Column("city",                            Text),
+            Column("country",                         Text),
+            Column("is_highway",                      BOOLEAN),
+            Column("speed",                           Float),
+            Column("regular_speed",                   Float),
+            Column("delay_seconds",                   INTEGER),
+            Column("seconds",                         INTEGER),
+            Column("length",                          INTEGER),
+            Column("trend",                           INTEGER),
+            Column("type",                            Text),
+            Column("severity",                        Float),
+            Column("jam_level",                       INTEGER),
+            Column("drivers_count",                   INTEGER),
+            Column("alerts_count",                    INTEGER),
+            Column("n_thumbs_up",                     INTEGER),
+            Column("n_comments",                      INTEGER),
+            Column("n_images",                        INTEGER),
+            Column("line",                            JSON),
+            Column("cause_type",                      Text),
+            Column("start_node",                      Text),
+            Column("end_node",                        Text),
+            Column("datafile_id",                     BigInteger,
+                                                      nullable=False),
+            schema='waze',)   
+
+        self.tables_postgis['coordinate_type'] = sa.Table(
+            'coordinate_type', metadata,
+            Column("id",                              INTEGER,
+                                                      primary_key=True,
+                                                      nullable=False),
+            Column("type_name",                       Text,
+                                                      nullable=False),
+            schema='waze',)   
+
+        self.tables_postgis['coordinates'] = sa.Table(
+            'coordinates', metadata,
+            Column("id",                              VARCHAR(40),
+                                                      primary_key=True,
+                                                      nullable=False),
+            Column("latitude",                        Float(8), nullable=False),
+            Column("longitude",                       Float(8), nullable=False),
+            Column("order",                           INTEGER, nullable=False),
+            Column("jam_id",                          INTEGER,
+                                                      ForeignKey('waze.jams.id')),
+            Column("irregularity_id",                 INTEGER,
+                                                      ForeignKey('waze.irregularities.id')),
+            Column("alert_id",                        INTEGER,
+                                                      ForeignKey('waze.alerts.id')),
+            Column("coordinate_type_id",              INTEGER,
+                                                      ForeignKey('waze.coordinate_type.id')),
+            schema='waze',) 
+
+        self.tables_postgis['roads'] = sa.Table(
+            'roads', metadata,
+            Column("id",                              INTEGER,
+                                                      primary_key=True,
+                                                      nullable=False),
+            Column("value",                           INTEGER, nullable=False),
+            Column("name",                            VARCHAR(100),
+                                                      nullable=False),
+            schema='waze',) 
+
+        self.tables_postgis['alert_types'] = sa.Table(
+            'alert_types', metadata,
+            Column("id",                              INTEGER,
+                                                      primary_key=True,
+                                                      nullable=False),
+            Column("type",                          Text, nullable=False),
+            Column("subtype",                       Text),
+            schema='waze',)
+
+
+        metadata.create_all(self.engine_postgis)
+        
+        try:
+            self.engine_postgis.execute(
+                """ALTER TABLE waze.roads
+                    ADD CONSTRAINT roads_unique_combo UNIQUE(value, name);""")
+        except sa.exc.ProgrammingError:
+            pass
+
+        try:
+            self.engine_postgis.execute(
+                """ALTER TABLE waze.alert_types
+                    ADD CONSTRAINT alert_types_unique_combo 
+                        UNIQUE(type, subtype);""")
+        except sa.exc.ProgrammingError:
+            pass
+
+        # Insert elements
+        with self.engine_postgis.connect() as conn:
+            try:
+                conn.execute(self.tables_postgis['coordinate_type'].insert(),
+                        [{'id': 1, 'type_name': 'Line'},
+                        {'id': 2, 'type_name': 'Turn Line'},
+                        {'id': 3, 'type_name': 'Location'}]
+                        )
+            except sa.exc.IntegrityError:
+                pass
+            
+            try:
+                conn.execute(self.tables_postgis['roads'].insert(),
+                         [{'value': 1, 'name': 'Streets'},
+                         {'value': 2, 'name': 'Primary Street'},
+                         {'value': 3, 'name': 'Freeways'},
+                         {'value': 4, 'name': 'Ramps'},
+                         {'value': 5, 'name': 'Trails'},
+                         {'value': 6, 'name': 'Primary'},
+                         {'value': 7, 'name': 'Secondary'},
+                         {'value': 8, 'name': '4X4 Trails'},
+                         {'value': 9, 'name': 'Walkway'},
+                         {'value': 10, 'name': 'Pedestrian'},
+                         {'value': 11, 'name': 'Exit'},
+                         {'value': 12, 'name': '?'},
+                         {'value': 13, 'name': '?'},
+                         {'value': 14, 'name': '4X4 Trails'},
+                         {'value': 15, 'name': 'Ferry crossing'},
+                         {'value': 16, 'name': 'Stairway'},
+                         {'value': 17, 'name': 'Private road'},
+                         {'value': 18, 'name': 'Railroads'},
+                         {'value': 19, 'name': 'Runway/Taxiway'},
+                         {'value': 20, 'name': 'Parking lot road'},
+                         {'value': 21, 'name': 'Service road'}])
+            except sa.exc.IntegrityError:
+                pass
+
+            try:
+                conn.execute(self.tables_postgis['alert_types'].insert(),
+        [{'type': 'ACCIDENT', 'subtype': 'ACCIDENT_MINOR'},
+        {'type': 'ACCIDENT', 'subtype': 'ACCIDENT_MAJOR'},
+        {'type': 'ACCIDENT', 'subtype': 'NO_SUBTYPE'},
+        {'type': 'JAM', 'subtype': 'JAM_MODERATE_TRAFFIC'},
+        {'type': 'JAM', 'subtype': 'JAM_HEAVY_TRAFFIC'},
+        {'type': 'JAM', 'subtype': 'JAM_STAND_STILL_TRAFFIC'},
+        {'type': 'JAM', 'subtype': 'JAM_LIGHT_TRAFFIC'},
+        {'type': 'JAM', 'subtype': 'NO_SUBTYPE'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'HAZARD_ON_ROAD'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'HAZARD_ON_SHOULDER'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'HAZARD_WEATHER'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'HAZARD_ON_ROAD_OBJECT'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'HAZARD_ON_ROAD_POT_HOLE'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'HAZARD_ON_ROAD_ROAD_KILL'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'HAZARD_ON_SHOULDER_CAR_STOPPED'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'HAZARD_ON_SHOULDER_ANIMALS'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'HAZARD_ON_SHOULDER_MISSING_SIGN'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'HAZARD_WEATHER_FOG'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'HAZARD_WEATHER_HAIL'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'HAZARD_WEATHER_HEAVY_RAIN'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'HAZARD_WEATHER_HEAVY_SNOW'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'HAZARD_WEATHER_FLOOD'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'HAZARD_WEATHER_MONSOON'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'HAZARD_WEATHER_TORNADO'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'HAZARD_WEATHER_HEAT_WAVE'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'HAZARD_WEATHER_HURRICANE'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'HAZARD_WEATHER_FREEZING_RAIN'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'HAZARD_ON_ROAD_LANE_CLOSED'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'HAZARD_ON_ROAD_OIL'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'HAZARD_ON_ROAD_ICE'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'HAZARD_ON_ROAD_CONSTRUCTION'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'HAZARD_ON_ROAD_CAR_STOPPED'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'HAZARD_ON_ROAD_TRAFFIC_LIGHT_FAULT'},
+        {'type': 'WEATHERHAZARD/HAZARD', 'subtype': 'NO_SUBTYPE'},
+        {'type': 'MISC', 'subtype': 'NO_SUBTYPE'},
+        {'type': 'CONSTRUCTION', 'subtype': 'NO_SUBTYPE'},
+        {'type': 'ROAD_CLOSED', 'subtype': 'ROAD_CLOSED_HAZARD'},
+        {'type': 'ROAD_CLOSED', 'subtype': 'ROAD_CLOSED_CONSTRUCTION'},
+        {'type': 'ROAD_CLOSED', 'subtype': 'ROAD_CLOSED_EVENT'},])
+            except sa.exc.IntegrityError:
+                pass
+
+    def parse_json_name(self, raw_path):
+        
+        table, timestamp, timezone, datafile_id = (raw_path.
+                                                replace('.json', '').
+                                                split('/')[-1].split('--'))
+
+        timezone = timezone.replace('-', '/')
+
+        return timestamp, datafile_id, timezone
+    
+    def prepare_alerts(self, raws, timestamp, datafile_id, timezone):
+        new = []
+        for raw in raws:
+            new.append({
+            "uuid":                         raw.get("uuid"),
+            "pub_millis":                   raw.get("pubMillis"),
+            "pub_utc_date":                 datetime.datetime.strptime(timestamp,
+                                            '%Y-%m-%d %H:%M:%S'),
+            "road_type":                    raw.get("roadType"),
+            "location":                     raw.get("location"),
+            "street":                       raw.get("street"),
+            "city":                         raw.get("city"),
+            "country":                      raw.get("country"),
+            "magvar":                       raw.get("magvar"),
+            "reliability":                  raw.get("reliability"),
+            "report_description":           raw.get("reportDescription"),
+            "report_rating":                raw.get("reportRating"),
+            "confidence":                   raw.get("confidence"),
+            "type":                         raw.get("type"),
+            "subtype":                      raw.get("subtype"),
+            "report_by_municipality_user":  raw.get("reportByMunicipalityUser"),
+            "thumbs_up":                    raw.get("nThumbsUp" ),
+            "jam_uuid":                     raw.get("jamUuid"),
+            "datafile_id":                  datafile_id,
+            })
+        return new
+    
+    def prepare_jams(self, raws, timestamp, datafile_id, timezone):
+        new = []
+        for raw in raws:
+            new.append({
+            "uuid":                raw.get("uuid"),
+            "pub_millis":          raw.get("pubMillis"),        
+            "pub_utc_date":        datetime.datetime.strptime(timestamp,
+                                            '%Y-%m-%d %H:%M:%S'),
+            "start_node":          raw.get("startNode"),            
+            "end_node":            raw.get("endNode"),        
+            "road_type":           raw.get("roadType"),            
+            "street":              raw.get("street"),        
+            "city":                raw.get("city"),
+            "country":             raw.get("country"),        
+            "delay":               raw.get("delay"),        
+            "speed":               raw.get("speed"),        
+            "speed_kmh":           raw.get("speed"),            
+            "length":              raw.get("length"),        
+            "turn_type":           raw.get("turnType"),           
+            "level":               raw.get("level"),        
+            "blocking_alert_id":   raw.get("blockingAlertId"),               
+            "line":                raw.get("line"),
+            "type":                raw.get("type"),
+            "turn_line":           raw.get("turnLine"),       
+            "datafile_id":         datafile_id
+            }) 
+        return new             
+
+    def prepare_irregularities(self, raws, timestamp, datafile_id, timezone):
+        new = []
+        from_zone = tz.tzutc()
+        to_zone = tz.gettz(timezone)
+        for raw in raws:
+            new.append({
+            "uuid":                           raw.get("id"), 
+            "detection_date_millis":          raw.get("detectionDateMillis"), 
+            "detection_date":                 raw.get("detectionDate"),
+            "detection_utc_date":             datetime.datetime.
+                                              strptime(raw.get('detectionDate'),
+                                                    '%a %b %d %H:%M:%S %z %Y').
+                                              replace(tzinfo=from_zone).
+                                              astimezone(to_zone),
+            "update_date_millis":             raw.get("updateDateMillis"),
+            "update_date":                    raw.get("updateDate"),
+            "update_utc_date":                datetime.datetime.
+                                              strptime(raw.get('updateDate'),
+                                                    '%a %b %d %H:%M:%S %z %Y').
+                                              replace(tzinfo=from_zone).
+                                              astimezone(to_zone), 
+            "street":                         raw.get("street"),
+            "city":                           raw.get("city"),
+            "country":                        raw.get("country"),
+            "is_highway":                     raw.get("isHighway"),
+            "speed":                          raw.get("speed"),
+            "regular_speed":                  raw.get("regularSpeed"),
+            "delay_seconds":                  raw.get("delaySeconds"),
+            "seconds":                        raw.get("seconds"),
+            "length":                         raw.get("length"),
+            "trend":                          raw.get("trend"),
+            "type":                           raw.get("type"),
+            "severity":                       raw.get("severity"),
+            "jam_level":                      raw.get("jamLevel"),
+            "drivers_count":                  raw.get("driversCount"),
+            "alerts_count":                   raw.get("alertsCount"),
+            "n_thumbs_up":                    raw.get("nThumbsUp"),
+            "n_comments":                     raw.get("nComments"),
+            "n_images":                       raw.get("nImages"),
+            "line":                           raw.get("line"),
+            "cause_type":                     raw.get("causeType"),
+            "start_node":                     raw.get("startNode"),
+            "end_node":                       raw.get("endNode"),
+            "datafile_id":                    datafile_id
+            }) 
+        return new 
+
+    def read_json(self, files, table):
+        
+        data = []
+        
+        if len(files):
+            for raw_path in files:
+                timestamp, datafile_id, timezone = self.parse_json_name(
+                                                                raw_path)
+                data = data + (
+                        self.prepare[table](json.load(open(raw_path,
+                                                    'r', 
+                                                    encoding='utf8')),
+                                            timestamp, 
+                                            datafile_id,
+                                            timezone))
+            
+            return data
+        
+        else:
+            return False
+
+    @staticmethod
+    def chunks(l, n):
+        """Yield successive n-sized chunks from l."""
+        for i in range(0, len(l), n):
+            yield l[i:i + n]
+       
+    def load_json(self):
+        
+        for table in self.tables:
+            files = glob(self.output_path + '/' + table + '*.json')
+            
+            with self.engine_postgis.connect() as conn:
+                for chunk in self.chunks(files, self.chunksize):
+                    data = self.read_json(chunk, table)
+                    if data:
+                        conn.execute(self.tables_postgis[table].insert(), data)
+
+    def to_postgis(self):
+
+        self.engine_postgis = create_postgis_engine()
+        self.init_postigis()
+
+        # make queries strings 
+        # TODO: modify it according to data on postgre
+        # self.queries = self.make_query()
+
+        self.prepare = {'alerts': self.prepare_alerts,
+                        'jams': self.prepare_jams,
+                        'irregularities': self.prepare_irregularities,}
+
+        self.to_json()
+
+        self.load_json()
+
+        self.clear_json()
+
+a = Postgis().to_postgis()
