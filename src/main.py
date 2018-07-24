@@ -21,8 +21,6 @@ def create_tables(engine):
     except:
         pass
     engine.execute("USE waze")
-    # TODO: change time zone
-    engine.execute("SET GLOBAL time_zone = 'America/Sao_Paulo'")
 
     # Try to create table if not exist
     metadata = MetaData()

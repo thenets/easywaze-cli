@@ -1,8 +1,23 @@
 '''
-This file contains capture exportation methods to:
-- to_postgre -- postgre 
-- to_json    -- json
+This file instanciate the parent class to export files from the MySql database
+that stores the captured data.
+
+It can be imported and used as a parent class to any other exportation method.
+
+It has the following variables that can be used:
+
+self.tables -- list :: selected tables to be exported
+self.time_range -- int :: range of time given the final date
+self.final_date -- datetime :: last day to be exported
+self.initial_date  -- datetime :: first day to be exported
+self.chunksize -- int :: maximum number of files in one operation
+self.columns -- list :: columns at MySql database
+self.queries -- list :: list of sql queries to select data given the time range
+self.engine_mysql -- slalchemy.engine :: engine connected to MySql
+self.name -- string :: name of the export base on the time range
+
 '''
+
 from datetime import datetime, timedelta
 import sqlalchemy as sa
 import os
@@ -77,10 +92,24 @@ class Export(object):
 
     @staticmethod
     def to_mysql_date(date):
+        """Converts MySql date format to datetime 
+        
+        Arguments:
+            date {string} -- MySql date
+        
+        Returns:
+            datetime -- datetime object
+        """
         return datetime.strftime(date, '%Y-%m-%d')
     
 
     def make_query(self):
+        """Prepare queries to MySql database based on the date interval
+        and tables selected
+        
+        Returns:
+            dict -- key: table name, value: sql query
+        """
 
         query = {}
         for table in self.tables:
@@ -100,6 +129,12 @@ class Export(object):
 
 
     def perform_query(self, table):
+        """Execute query on MySql depending on table. It chunks the results
+        using the parameter self.chunksize to delimit its size
+        
+        Arguments:
+            table {string} -- table name
+        """
 
         with self.engine_mysql.connect() as con:
              
@@ -113,12 +148,34 @@ class Export(object):
 
 
     def select(self, row, by='id'):
+        """Easy way to select value from query results based on key
+        
+        Arguments:
+            row {list} -- list with query results
+        
+        Keyword Arguments:
+            by {str} -- column to take the value from (default: {'id'})
+        
+        Returns:
+            depends -- value associated to the query result
+        """
 
         return row[self.columns.index(by)]
 
 
     @staticmethod
     def create_filename(table, start_time, timezone, idx):
+        """Create filename based on descriptive variables
+        
+        Arguments:
+            table {string} -- table name
+            start_time {string} -- timestamp
+            timezone {string} -- timezone of the data   
+            idx {int} -- unique id from MySql captures  
+        
+        Returns:
+            string -- filename
+        """
         
         timezone = timezone.replace('/', '-')
 
@@ -129,14 +186,23 @@ class Export(object):
                                             idx=idx
                                             )
     def generate_name(self):
-
+        """Generates the folder name based on the date range. Writes on 
+        self.name
+        """
         self.name = '{initial_date}--to--{final_date}'.format(
                         initial_date=self.to_mysql_date(self.initial_date),
                         final_date=self.to_mysql_date(self.final_date))
 
 
     def create_pathname(self, output_path):
+        """Creates path name using the output_path and the self.name
         
+        Arguments:
+            output_path {string} -- path to save the json files
+        
+        Returns:
+            string -- precise path to save the json files
+        """
         self.generate_name()
 
         return os.path.join(output_path, self.name)

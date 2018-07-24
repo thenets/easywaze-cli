@@ -1,3 +1,26 @@
+'''
+This file instanciate a child class to export files from the MySql database
+to json.
+
+It can be imported and used as a parent class to any other exportation method.
+
+It has the following variables that can be used:
+
+# Export
+self.tables -- list :: selected tables to be exported
+self.time_range -- int :: range of time given the final date
+self.final_date -- datetime :: last day to be exported
+self.initial_date  -- datetime :: first day to be exported
+self.chunksize -- int :: maximum number of files in one operation
+self.columns -- list :: columns at MySql database
+self.queries -- list :: list of sql queries to select data given the time range
+self.engine_mysql -- slalchemy.engine :: engine connected to MySql
+self.name -- string :: name of the export base on the time range
+
+# Json
+self.output_path -- string :: dump path 
+'''
+
 from export import Export
 import sqlalchemy as sa
 import os
@@ -7,9 +30,16 @@ import json
 
 
 class Json(Export):
-    
+
     def to_json(self, output_path='app/dumps/json/'):
-        
+        """Dump files from MySql in json format. 
+            It saves the files at:
+                'app/dumps/json/<initial-date>--to--<final-date>/'
+            with the name:
+                '{table}--{start_time}--{timezone}--{idx}.json'
+        Keyword Arguments:
+            output_path {str} -- dump path (default: {'app/dumps/json/'})
+        """
         self.output_path = self.create_pathname(output_path)
 
         # Create path if it does not exists

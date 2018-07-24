@@ -1,3 +1,28 @@
+'''
+This file instanciate a child class to export files from the MySql database
+a Postgre + GIS database.
+
+It can be imported and used as a parent class to any other exportation method.
+
+It has the following variables that can be used:
+
+# Export
+self.tables -- list :: selected tables to be exported
+self.time_range -- int :: range of time given the final date
+self.final_date -- datetime :: last day to be exported
+self.initial_date  -- datetime :: first day to be exported
+self.chunksize -- int :: maximum number of files in one operation
+self.columns -- list :: columns at MySql database
+self.queries -- list :: list of sql queries to select data given the time range
+self.engine_mysql -- slalchemy.engine :: engine connected to MySql
+self.name -- string :: name of the export base on the time range
+
+# Json
+self.output_path -- string :: dump path 
+
+# Postgis
+self.tables_postgis -- dict :: metadata of tables created
+'''
 import sqlalchemy as sa
 from glob import glob
 import json
@@ -14,6 +39,22 @@ from to_json import Json
 class Postgis(Json):
 
     def init_postigis(self):
+        """Creates all the tables and schema.
+        The table schema is based on the 
+        [WazeCCPProcessor](github.com/LouisvilleMetro/WazeCCPProcessor)
+        project in order to achieve maximum compatibility.
+
+        It creates a schema: `waze`
+        and the tables:
+
+        - jams
+        - irregularities
+        - alerts
+        - roads
+        - alert_types
+        - coordinates
+        - coordinate_type
+        """
 
         try:
             self.engine_postgis.execute("CREATE SCHEMA waze") #create db
@@ -275,7 +316,14 @@ class Postgis(Json):
                 pass
 
     def parse_json_name(self, raw_path):
+        """Parse name of json to get data
         
+        Arguments:
+            raw_path {string} -- json name as <>.json
+        
+        Returns:
+            str, str, str -- timestamp, datafile_id, timezone
+        """
         table, timestamp, timezone, datafile_id = (raw_path.
                                                 replace('.json', '').
                                                 split('/')[-1].split('--'))
@@ -285,6 +333,17 @@ class Postgis(Json):
         return timestamp, datafile_id, timezone
     
     def prepare_alerts(self, raws, timestamp, datafile_id, timezone):
+        """Prepare data to insert at Postgis
+        
+        Arguments:
+            raws {list} -- list of json load data
+            timestamp {str} -- datetime string
+            datafile_id {str} -- capture id
+            timezone {str} -- timezone
+        
+        Returns:
+            list -- list of dict ready to insert
+        """
         new = []
         for raw in raws:
             new.append({
@@ -312,6 +371,17 @@ class Postgis(Json):
         return new
     
     def prepare_jams(self, raws, timestamp, datafile_id, timezone):
+        """Prepare data to insert at Postgis
+        
+        Arguments:
+            raws {list} -- list of json load data
+            timestamp {str} -- datetime string
+            datafile_id {str} -- capture id
+            timezone {str} -- timezone
+        
+        Returns:
+            list -- list of dict ready to insert
+        """
         new = []
         for raw in raws:
             new.append({
@@ -340,6 +410,17 @@ class Postgis(Json):
         return new             
 
     def prepare_irregularities(self, raws, timestamp, datafile_id, timezone):
+        """Prepare data to insert at Postgis
+        
+        Arguments:
+            raws {list} -- list of json load data
+            timestamp {str} -- datetime string
+            datafile_id {str} -- capture id
+            timezone {str} -- timezone
+        
+        Returns:
+            list -- list of dict ready to insert
+        """
         new = []
         from_zone = tz.tzutc()
         to_zone = tz.gettz(timezone)
@@ -387,7 +468,15 @@ class Postgis(Json):
         return new 
 
     def read_json(self, files, table):
+        """Read json data given a table name
         
+        Arguments:
+            files {list} -- list of files paths
+            table {str} -- table name
+        
+        Returns:
+            list or False -- list of json dump data or False if no data
+        """
         data = []
         
         if len(files):
@@ -414,7 +503,8 @@ class Postgis(Json):
             yield l[i:i + n]
        
     def load_json(self):
-        
+        """Load json to Postgis. It chunks data based on self.chunksize
+        """
         for table in self.tables:
             files = glob(self.output_path + '/' + table + '*.json')
             
@@ -425,7 +515,9 @@ class Postgis(Json):
                         conn.execute(self.tables_postgis[table].insert(), data)
 
     def to_postgis(self):
-
+        """Prepare Postgis database and insert data. It also erases the
+        json dumped files.
+        """
         self.engine_postgis = create_postgis_engine()
         self.init_postigis()
 
