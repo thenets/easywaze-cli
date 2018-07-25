@@ -11,6 +11,8 @@ self.time_range -- int :: range of time given the final date
 self.final_date -- datetime :: last day to be exported
 self.initial_date  -- datetime :: first day to be exported
 self.chunksize -- int :: maximum number of files in one operation
+self.output_path -- string :: dump path 
+self.logging -- bollean :: activate logging
 self.columns -- list :: columns at MySql database
 self.queries -- list :: list of sql queries to select data given the time range
 self.engine_mysql -- slalchemy.engine :: engine connected to MySql
@@ -24,9 +26,11 @@ import os
 import sys
 from sqlalchemy import (VARCHAR, Text, BigInteger, INTEGER, TIMESTAMP, JSON, 
                         BOOLEAN, Column, Float, ForeignKey)
+import logging
 
 # Local imports
 from app.utils import create_mysql_engine, create_postgis_engine
+
 
 
 class Export(object):
@@ -64,7 +68,8 @@ class Export(object):
                 final_date=None,
                 initial_date=None, 
                 chunksize=10000,
-                output_path='app/dumps/'
+                output_path='app/dumps/',
+                logging=False,
                 ):
         
         self.tables = tables
@@ -77,6 +82,7 @@ class Export(object):
                                 else self.to_datetime(initial_date))
         self.chunksize = chunksize
         self.output_path = output_path
+        self.logging = logging
 
         self.columns = ['id', 
                         'start_time_millis', 
@@ -89,7 +95,7 @@ class Export(object):
         self.queries = self.make_query_from_date()
 
         # Use waze db
-        self.engine_mysql = create_mysql_engine()
+        self.engine_mysql = create_mysql_engine(echo=self.logging)
         self.engine_mysql.execute('USE waze')
 
     @staticmethod
@@ -155,7 +161,7 @@ class Export(object):
             dict -- dict of non existent ids by table
         """
         non_existent = {}
-        print(self.tables)
+
         for table in self.tables:
             exist = set(existent_ids[table])
             query = set(query_ids[table])
@@ -174,7 +180,7 @@ class Export(object):
         
         query = {}
         to_remove = []
-        print(ids, self.tables)
+
         for table in self.tables:
             if len(ids[table]):
                 query[table] = """
@@ -212,7 +218,7 @@ class Export(object):
         non_existing_ids = self.get_non_existent_ids(existing_ids, query_ids)
 
         self.queries = self.make_query_from_ids(non_existing_ids)
-        print(self.queries)
+
 
     def perform_query(self, table):
         """Execute query on MySql depending on table. It chunks the results

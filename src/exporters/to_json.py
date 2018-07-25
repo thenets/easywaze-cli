@@ -12,13 +12,13 @@ self.time_range -- int :: range of time given the final date
 self.final_date -- datetime :: last day to be exported
 self.initial_date  -- datetime :: first day to be exported
 self.chunksize -- int :: maximum number of files in one operation
+self.output_path -- string :: dump path 
+self.logging -- bollean :: activate logging
 self.columns -- list :: columns at MySql database
 self.queries -- list :: list of sql queries to select data given the time range
 self.engine_mysql -- slalchemy.engine :: engine connected to MySql
 self.name -- string :: name of the export base on the time range
 
-# Json
-self.output_path -- string :: dump path 
 '''
 
 from prepare import Export
