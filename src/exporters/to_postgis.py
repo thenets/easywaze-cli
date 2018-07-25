@@ -529,7 +529,7 @@ class Postgis(Json):
         """Prepare Postgis database and insert data. It also erases the
         json dumped files.
         """
-        self.engine_postgis = create_postgis_engine(echo=self.logging)
+        self.engine_postgis = create_postgis_engine(logging=self.logging)
         self.init_postigis()
 
         # make queries strings 

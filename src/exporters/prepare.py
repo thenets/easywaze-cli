@@ -95,7 +95,7 @@ class Export(object):
         self.queries = self.make_query_from_date()
 
         # Use waze db
-        self.engine_mysql = create_mysql_engine(echo=self.logging)
+        self.engine_mysql = create_mysql_engine(logging=self.logging)
         self.engine_mysql.execute('USE waze')
 
     @staticmethod
