@@ -12,7 +12,8 @@ self.final_date -- datetime :: last day to be exported
 self.initial_date  -- datetime :: first day to be exported
 self.chunksize -- int :: maximum number of files in one operation
 self.output_path -- string :: dump path 
-self.logging -- bollean :: activate logging
+self.logging -- boolean :: activate logging
+self.force_export -- boolean :: If true, export all
 self.columns -- list :: columns at MySql database
 self.queries -- list :: list of sql queries to select data given the time range
 self.engine_mysql -- slalchemy.engine :: engine connected to MySql
@@ -70,6 +71,7 @@ class Export(object):
                 chunksize=10000,
                 output_path='app/dumps/',
                 logging=False,
+                force_export=False
                 ):
         
         self.tables = tables
@@ -83,6 +85,7 @@ class Export(object):
         self.chunksize = chunksize
         self.output_path = output_path
         self.logging = logging
+        self.force_export = force_export
 
         self.columns = ['id', 
                         'start_time_millis', 

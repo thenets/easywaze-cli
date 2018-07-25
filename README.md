@@ -50,6 +50,7 @@ ___
 |   Chunksize   | `--chunksize` | int  | Number of files to be processed at time|
 |   Output Path   | `--output_path` | str path `app/dumps`  | Where to store the raw data | 
 |   Logging   | `--logging` | Bollean  `True|False`  | Activate INFO logging | 
+|   Force Export   | `--force-export` | Bollean  `True|False`  | Reload database and export | 
 
 
 

@@ -29,6 +29,7 @@ from dateutil import tz
 import datetime
 from sqlalchemy import (VARCHAR, Text, BigInteger, INTEGER, TIMESTAMP, JSON, 
                         BOOLEAN, Column, Float, ForeignKey, DateTime, select)
+from geoalchemy2 import Geometry
 import fire
 
 # Local imports
@@ -56,6 +57,12 @@ class Postgis(Json):
         - coordinate_type
         """
 
+        if self.force_export:
+            try:
+                self.engine_postgis.execute('DROP SCHEMA waze CASCADE')
+            except:
+                pass
+
         try:
             self.engine_postgis.execute("CREATE SCHEMA waze") #create db
         except:
@@ -80,25 +87,29 @@ class Postgis(Json):
             'alerts', metadata,
             Column("id",                              INTEGER,
                                                       primary_key=True,),
-            Column("uuid",                            Text, nullable=False),
+            Column("uuid",                            Text, nullable=False,
+                                                      index=True),
             Column("pub_millis",                      BigInteger, nullable=False),
-            Column("pub_utc_date",                    TIMESTAMP),
-            Column("road_type",                       INTEGER),
+            Column("pub_utc_date",                    TIMESTAMP, index=True),
+            Column("road_type",                       INTEGER, index=True),
             Column("location",                        JSON),
+            Column("location_geo",                    Geometry('POINT')),
             Column("street",                          Text),
             Column("city",                            Text),
             Column("country",                         Text),
             Column("magvar",                          INTEGER),
-            Column("reliability",                     INTEGER),
+            Column("reliability",                     INTEGER, index=True),
             Column("report_description",              Text),
             Column("report_rating",                   INTEGER),
-            Column("confidence",                      INTEGER),
-            Column("type",                            Text),
-            Column("subtype",                         Text),
+            Column("confidence",                      INTEGER, index=True),
+            Column("type",                            Text, index=True),
+            Column("subtype",                         Text, index=True),
             Column("report_by_municipality_user",     BOOLEAN),
-            Column("thumbs_up",                       INTEGER),
-            Column("jam_uuid",                        Text),
-            Column("datafile_id",                     BigInteger, nullable=False), 
+            Column("thumbs_up",                       INTEGER, index=True),
+            Column("jam_uuid",                        Text, index=True),
+            Column("datafile_id",                     BigInteger, 
+                                                      nullable=False,
+                                                      index=True), 
             schema='waze',)
 
         self.tables_postgis['jams'] = sa.Table(
@@ -107,28 +118,34 @@ class Postgis(Json):
                                                       primary_key=True,
                                                       nullable=False),
             Column("uuid",                            Text,
-                                                      nullable=False),
+                                                      nullable=False,
+                                                      index=True),
             Column("pub_millis",                      BigInteger,
                                                       nullable=False),
-            Column("pub_utc_date",                    TIMESTAMP),
+            Column("pub_utc_date",                    TIMESTAMP,
+                                                      index=True),
             Column("start_node",                      Text),
             Column("end_node",                        Text),
             Column("road_type",                       INTEGER),
-            Column("street",                          Text),
+            Column("street",                          Text,
+                                                      index=True),
             Column("city",                            Text),
             Column("country",                         Text),
-            Column("delay",                           INTEGER),
-            Column("speed",                           Float),
-            Column("speed_kmh",                       Float),
-            Column("length",                          INTEGER),
+            Column("delay",                           INTEGER, index=True),
+            Column("speed",                           Float, index=True),
+            Column("speed_kmh",                       Float, index=True),
+            Column("length",                          INTEGER, index=True),
             Column("turn_type",                       Text),
-            Column("level",                           INTEGER),
+            Column("level",                           INTEGER, index=True),
             Column("blocking_alert_id",               Text),
             Column("line",                            JSON),
-            Column("type",                            Text),
+            Column("line_geo",                        Geometry('LINESTRING')),
+            Column("type",                            Text, index=True),
             Column("turn_line",                       JSON),
+            Column("turn_line_geo",                   Geometry('LINESTRING')),
             Column("datafile_id",                     BigInteger,
-                                                      nullable=False),
+                                                      nullable=False,
+                                                      index=True),
             schema='waze',)   
 
         self.tables_postgis['irregularities'] = sa.Table(
@@ -137,37 +154,40 @@ class Postgis(Json):
                                                       primary_key=True,
                                                       nullable=False),
             Column("uuid",                            Text,
-                                                      nullable=False),
+                                                      nullable=False,
+                                                      index=True),
             Column("detection_date_millis",           BigInteger, nullable=False),
             Column("detection_date",                  Text),
-            Column("detection_utc_date",              TIMESTAMP),
+            Column("detection_utc_date",              TIMESTAMP, index=True),
             Column("update_date_millis",              BigInteger,nullable=False),
             Column("update_date",                     Text),
-            Column("update_utc_date",                 TIMESTAMP),
-            Column("street",                          Text),
+            Column("update_utc_date",                 TIMESTAMP, index=True),
+            Column("street",                          Text, index=True),
             Column("city",                            Text),
             Column("country",                         Text),
             Column("is_highway",                      BOOLEAN),
-            Column("speed",                           Float),
-            Column("regular_speed",                   Float),
-            Column("delay_seconds",                   INTEGER),
-            Column("seconds",                         INTEGER),
-            Column("length",                          INTEGER),
-            Column("trend",                           INTEGER),
-            Column("type",                            Text),
-            Column("severity",                        Float),
-            Column("jam_level",                       INTEGER),
+            Column("speed",                           Float, index=True),
+            Column("regular_speed",                   Float, index=True),
+            Column("delay_seconds",                   INTEGER, index=True),
+            Column("seconds",                         INTEGER, index=True),
+            Column("length",                          INTEGER, index=True),
+            Column("trend",                           INTEGER, index=True),
+            Column("type",                            Text, index=True),
+            Column("severity",                        Float, index=True),
+            Column("jam_level",                       INTEGER, index=True),
             Column("drivers_count",                   INTEGER),
-            Column("alerts_count",                    INTEGER),
-            Column("n_thumbs_up",                     INTEGER),
+            Column("alerts_count",                    INTEGER, index=True),
+            Column("n_thumbs_up",                     INTEGER, index=True),
             Column("n_comments",                      INTEGER),
             Column("n_images",                        INTEGER),
             Column("line",                            JSON),
+            Column("line_geo",                        Geometry('LINESTRING')),
             Column("cause_type",                      Text),
             Column("start_node",                      Text),
             Column("end_node",                        Text),
             Column("datafile_id",                     BigInteger,
-                                                      nullable=False),
+                                                      nullable=False,
+                                                      index=True),
             schema='waze',)   
 
         self.tables_postgis['coordinate_type'] = sa.Table(
@@ -314,6 +334,8 @@ class Postgis(Json):
         {'type': 'ROAD_CLOSED', 'subtype': 'ROAD_CLOSED_EVENT'},])
             except sa.exc.IntegrityError:
                 pass
+
+        # Crate indexes
 
     def parse_json_name(self, raw_path):
         """Parse name of json to get data
@@ -514,6 +536,8 @@ class Postgis(Json):
                     if data:
                         conn.execute(self.tables_postgis[table].insert(), data)
 
+        self.update_geometry_fields()
+
     def check_existent_data(self):
 
         existent_ids = {}
@@ -524,6 +548,70 @@ class Postgis(Json):
                 existent_ids[table] = [row[0] for row in res]
 
         return existent_ids
+
+    def update_geometry_fields(self):
+
+        for table in self.tables:
+
+            if table == 'alerts':
+
+                self.engine_postgis.execute(
+                    """
+                    update waze.alerts
+                    set location_geo  = (ST_MakePoint(
+                                        CAST(location->>'x' as float),
+                                        CAST(location->>'y'  as float)))
+                    where location_geo is null      
+                    """
+                )
+            
+            elif table == 'jams':
+
+                self.engine_postgis.execute(
+                    """
+                    update waze.jams
+                    set line_geo = (select ST_MakeLine(points)
+				                    from (
+					                select ST_MakePoint(
+                                        cast(json_array_elements(line)->>'x' 
+                                                as float), 
+							            cast(json_array_elements(line)->>'y' 
+                                                as float)) as points) as a)	
+                    where (line_geo is null) and 
+                          (line->0 is not null);     
+                    """
+                )
+
+                self.engine_postgis.execute(
+                    """
+                    update waze.jams
+                    set turn_line_geo = (select ST_MakeLine(points)
+				                        from (select ST_MakePoint(
+                                            CAST(json_array_elements(turn_line)
+                                                ->>'x' as float), 
+							                cast(json_array_elements(turn_line)
+                                            ->>'y' as float)) as points) as a)	
+                    where (turn_line_geo is null) and 
+                          (turn_line->0 is not null);    
+                    """
+                )
+
+            elif table == 'irregularities':
+                
+                self.engine_postgis.execute(
+                    """
+                    update waze.irregularities
+                    set line_geo = (select ST_MakeLine(points)
+				                        from (select ST_MakePoint(
+                                            CAST(json_array_elements(line)
+                                                ->>'x' as float), 
+							                cast(json_array_elements(line)
+                                            ->>'y' as float)) as points) as a)	
+                    where (line_geo is null) and 
+                          (line->0 is not null);    
+                    """
+                )
+
 
     def to_postgis(self):
         """Prepare Postgis database and insert data. It also erases the
