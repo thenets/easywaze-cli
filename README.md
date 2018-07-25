@@ -48,7 +48,7 @@ ___
 |   Final Date   | `--final_date` | string as date `2018-07-30`  | The last day to be computed. Default is `None`.| 
 |   Initial Date   | `--initial_date` | string as date `2018-07-30`  | The first day to be computed. Default is `None`| 
 |   Chunksize   | `--chunksize` | int  | Number of files to be processed at time|
-|   Output Path   | `--output_path` | str path `app/dumps`  | Where to store the raw data | 
+|   Output Path   | `--output_path` | str path `app/dumps`  | Where to store loggingthe raw data | 
 |   Logging   | `--logging` | Bollean  `True|False`  | Activate INFO logging | 
 |   Force Export   | `--force-export` | Bollean  `True|False`  | Reload database and export | 
 

@@ -26,6 +26,7 @@ import errno
 import shutil
 import json
 import fire
+import tqdm
 
 # Local Imports
 from prepare import Export
@@ -55,7 +56,7 @@ class Json(Export):
         
         # Dump json
 
-        for table in self.tables:
+        for table in tqdm.tqdm(self.tables, desc='Dumping data to json'):
             for chunk in self.perform_query(table):
                 for row in chunk:
                     filename = self.create_filename(

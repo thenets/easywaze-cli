@@ -31,6 +31,7 @@ from sqlalchemy import (VARCHAR, Text, BigInteger, INTEGER, TIMESTAMP, JSON,
                         BOOLEAN, Column, Float, ForeignKey, DateTime, select)
 from geoalchemy2 import Geometry
 import fire
+import tqdm
 
 # Local imports
 from app.utils import create_postgis_engine
@@ -527,7 +528,7 @@ class Postgis(Json):
     def load_json(self):
         """Load json to Postgis. It chunks data based on self.chunksize
         """
-        for table in self.tables:
+        for table in tqdm.tqdm(self.tables, desc='Loading data to Postgis'):
             files = glob(self.output_path + '/' + table + '*.json')
             
             with self.engine_postgis.connect() as conn:

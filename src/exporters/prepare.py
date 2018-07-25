@@ -28,6 +28,7 @@ import sys
 from sqlalchemy import (VARCHAR, Text, BigInteger, INTEGER, TIMESTAMP, JSON, 
                         BOOLEAN, Column, Float, ForeignKey)
 import logging
+import tqdm
 
 # Local imports
 from app.utils import create_mysql_engine, create_postgis_engine
@@ -210,7 +211,7 @@ class Export(object):
         self.queries = self.make_query_from_date(column='id')
 
         query_ids = {}
-        for table in self.tables:
+        for table in tqdm.tqdm(self.tables, desc='Checking repeated data'):
             for i, chunk in enumerate(self.perform_query(table)):
                 if i:
                     query_ids[table] = query_ids[table] +\
