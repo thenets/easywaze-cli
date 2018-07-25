@@ -31,7 +31,7 @@ ___
 Make sure that 
 - you did the steps above
 - you are in the root `cd /`
-
+tabl
 ___
 
 | Format   | Command           | Notes  |

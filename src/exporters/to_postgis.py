@@ -29,7 +29,7 @@ import json
 from dateutil import tz
 import datetime
 from sqlalchemy import (VARCHAR, Text, BigInteger, INTEGER, TIMESTAMP, JSON, 
-                        BOOLEAN, Column, Float, ForeignKey, DateTime)
+                        BOOLEAN, Column, Float, ForeignKey, DateTime, select)
 import fire
 
 # Local imports
@@ -515,6 +515,17 @@ class Postgis(Json):
                     if data:
                         conn.execute(self.tables_postgis[table].insert(), data)
 
+    def check_existent_data(self):
+
+        existent_ids = {}
+        with self.engine_postgis.connect() as conn:
+            for table in self.tables:
+                res = conn.execute(
+                        select([self.tables_postgis[table].c.datafile_id]))
+                existent_ids[table] = [row[0] for row in res]
+
+        return existent_ids
+
     def to_postgis(self):
         """Prepare Postgis database and insert data. It also erases the
         json dumped files.
@@ -529,6 +540,8 @@ class Postgis(Json):
         self.prepare = {'alerts': self.prepare_alerts,
                         'jams': self.prepare_jams,
                         'irregularities': self.prepare_irregularities,}
+
+        self.get_new_data(self.check_existent_data())
 
         self.to_json()
 

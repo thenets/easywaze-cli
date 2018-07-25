@@ -21,6 +21,7 @@ self.name -- string :: name of the export base on the time range
 from datetime import datetime, timedelta
 import sqlalchemy as sa
 import os
+import sys
 from sqlalchemy import (VARCHAR, Text, BigInteger, INTEGER, TIMESTAMP, JSON, 
                         BOOLEAN, Column, Float, ForeignKey)
 
@@ -85,7 +86,7 @@ class Export(object):
                         'timezone', 
                         'raw_json']
 
-        self.queries = self.make_query()
+        self.queries = self.make_query_from_date()
 
         # Use waze db
         self.engine_mysql = create_mysql_engine()
@@ -116,7 +117,7 @@ class Export(object):
         return datetime.strftime(date, '%Y-%m-%d')
     
 
-    def make_query(self):
+    def make_query_from_date(self, column='*'):
         """Prepare queries to MySql database based on the date interval
         and tables selected
         
@@ -127,7 +128,7 @@ class Export(object):
         query = {}
         for table in self.tables:
             query[table] = """
-                                SELECT *
+                                SELECT {column}
                                 FROM `{table}`
                                 WHERE `start_time`
                                     BETWEEN '{initial_date}'
@@ -136,10 +137,82 @@ class Export(object):
                             table=table,
                             initial_date=self.to_mysql_date(self.initial_date),
                             final_date=self.to_mysql_date(self.final_date),
+                            column=column
                         )
 
         return query
 
+
+    def get_non_existent_ids(self, existent_ids, query_ids):
+        """Get the ids that where not exported yet
+        
+        Arguments:
+            existent_ids {dict} -- dict of existent ids by table. Or already
+            exported.
+            query_ids {dict} -- dict of query ids by table
+        
+        Returns:
+            dict -- dict of non existent ids by table
+        """
+        non_existent = {}
+        print(self.tables)
+        for table in self.tables:
+            exist = set(existent_ids[table])
+            query = set(query_ids[table])
+            non_existent[table] = list(query - query.intersection(exist))
+
+        return non_existent
+
+    def make_query_from_ids(self, ids):
+        """Prepare queries to MySql database based on a id list
+        
+        Returns:
+            dict -- key: table name, value: sql query
+        """
+
+        # Check if all data was exported. If so, exit program
+        
+        query = {}
+        to_remove = []
+        print(ids, self.tables)
+        for table in self.tables:
+            if len(ids[table]):
+                query[table] = """
+                        SELECT *
+                        FROM `{table}`
+                        WHERE `id`
+                            IN ({ids})
+                """.format(
+                    table=table,
+                    ids=','.join(map(str, ids[table]))
+                )
+            else:
+                to_remove.append(table)
+
+        self.tables = [e for e in self.tables if e not in to_remove]
+
+        if len(self.tables) == 0:
+            self.exit('all-data-already-exported')
+
+        return query
+
+    def get_new_data(self, existing_ids):
+
+        self.queries = self.make_query_from_date(column='id')
+
+        query_ids = {}
+        for table in self.tables:
+            for i, chunk in enumerate(self.perform_query(table)):
+                if i:
+                    query_ids[table] = query_ids[table] +\
+                                     [self.select('id') for row in chunk]
+                else:
+                    query_ids[table] = [row[0] for row in chunk]
+
+        non_existing_ids = self.get_non_existent_ids(existing_ids, query_ids)
+
+        self.queries = self.make_query_from_ids(non_existing_ids)
+        print(self.queries)
 
     def perform_query(self, table):
         """Execute query on MySql depending on table. It chunks the results
@@ -219,4 +292,13 @@ class Export(object):
         self.generate_name()
 
         return os.path.join(output_path, self.name)
+
+    def exit(self, reason):
+
+        if reason == 'all-data-already-exported':
+            print('All data already exported')
+            sys.exit(0)
+        else:
+            sys.exit(0)
+
 
