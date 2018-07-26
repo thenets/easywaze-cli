@@ -65,7 +65,8 @@ class Export(object):
     """
 
     def __init__(self, 
-                tables=['irregularities', 'jams', 'alerts'],
+                #tables=['irregularities', 'jams', 'alerts'],
+                tables=[ 'jams', 'alerts'],
                 time_range=30,
                 final_date=None,
                 initial_date=None, 
@@ -167,9 +168,13 @@ class Export(object):
         non_existent = {}
 
         for table in self.tables:
-            exist = set(existent_ids[table])
-            query = set(query_ids[table])
-            non_existent[table] = list(query - query.intersection(exist))
+            # TODO: sort that out KeyError: 'irregularities'
+            try:
+                exist = set(existent_ids[table])
+                query = set(query_ids[table])
+                non_existent[table] = list(query - query.intersection(exist))
+            except:
+                print(self.tables, print(existent_ids), print(query_ids))
 
         return non_existent
 

@@ -121,6 +121,14 @@ services:
 				-e ALLOW_IP_RANGE=0.0.0.0/0 \
 				-v $(APP_NAME)-postgis:/var/lib/postgresql \
 				-p 25432:5432 -d -t kartoza/postgis
+				
+	@# Redis
+	@echo -e "\e[32mPreparing Redis database...\e[0m"
+	@docker rm -f $(APP_NAME)-redis >/dev/null 2>/dev/null || true
+	@echo -n $(APP_NAME)-redis:
+	@docker run --name $(APP_NAME)-redis --network=$(APP_NAME) \
+				-d -t redis:alpine
+				
 
 # Tools
 # ==============================
@@ -133,3 +141,25 @@ repair:
 	make basics
 	make db
 	
+
+
+
+# Custom commands
+# ==============================
+cmd-capture:
+	@docker run --rm -it \
+		$(VOLUME_PATH) \
+		--entrypoint="" \
+		--user=$(USER_NAME) \
+		--network $(APP_NAME) \
+		--name $(APP_NAME)-shell-$$RANDOM \
+		$(NAME):$(TAG) bin/capture.sh uygviuyvbiuvbiugbiugbviuygviv
+
+cmd-export:
+	@docker run --rm -it \
+		$(VOLUME_PATH) \
+		--entrypoint="" \
+		--user=$(USER_NAME) \
+		--network $(APP_NAME) \
+		--name $(APP_NAME)-shell-$$RANDOM \
+		$(NAME):$(TAG) bin/export.sh
