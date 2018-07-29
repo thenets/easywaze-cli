@@ -1,8 +1,39 @@
-#!/bin/sh
+#!/bin/bash
+
+# Hello message
+echo -e "\e[32m# Welcome to EasyWaze installer\e[0m"
+
+# Check if is sudo
+if [ "$EUID" -ne 0 ]
+  then echo -e "\e[31m[ERROR] Please run as root\e[0m"
+  exit
+fi
 
 export APP_NAME=easywaze
 
-set -x
+
+# User prompt to get config data
+echo "Type the city name (New York, São Paulo, ...):"
+read CITY_NAME
+echo "Type the country name (United States, Brazil, ...):"
+read COUNTRY_NAME
+echo "Type the Waze API endpoint (https://world-georss.waze.com/...):"
+read ENDPOINT
+
+# Generate config
+echo -e "\e[32mGenerating new config file...\e[0m"
+mkdir -p /opt/easywaze/
+cat > /opt/easywaze/config.yaml <<_EOF_
+cities:
+- {city_name: '$CITY_NAME', country_name: '$COUNTRY_NAME', endpoint: '$ENDPOINT',
+  }
+_EOF_
+
+
+# DEBUG
+#cat /opt/easywaze/config.yaml
+#set -x
+
 
 # Create network
 echo -e "\e[32mCreating network...\e[0m"
