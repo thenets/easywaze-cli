@@ -1,4 +1,0 @@
-cities:
-- {coords: '-48.92,-26.2;-48.969,-26.277;-48.9,-26.397;-48.767,-26.393;-48.739,-26.338;-48.777,-26.214;-48.92,-26.2',
-  name: joinville, timezone: America/Sao_Paulo, url: 'https://world-georss.waze.com/rtserver/web/TGeoRSS?tk=ccp_partner&format=JSON&acotu=true&irmie=true&types=traffic,alerts,irregularities&polygon=-48.92,-26.2;-48.969,-26.277;-48.9,-26.397;-48.767,-26.393;-48.739,-26.338;-48.777,-26.214;-48.92,-26.2'}
-url: https://world-georss.waze.com/rtserver/web/TGeoRSS?tk=ccp_partner&format=JSON&acotu=true&irmie=true&types=traffic,alerts,irregularities&polygon=

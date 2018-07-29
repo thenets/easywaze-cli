@@ -1,9 +1,0 @@
-requests
-pymysql
-SQLAlchemy
-pyyaml
-py-dateutil
-psycopg2-binary
-geoalchemy2
-fire
-tqdm
