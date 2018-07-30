@@ -35,13 +35,16 @@ RUN set -x \
     && chown -R $USER_NAME.$USER_NAME $USER_HOME
 
 # Add source code and install dependencies
-ADD src/ app/
 RUN set -x \
+    # Clone from remote repo
+    && git clone https://github.com/CTS-FGV/easywaze.git /app \
+    # Install virtualenv
     && cd $USER_HOME/.pyenv/versions \
     && virtualenv -p python3 venv \
     && chmod +x $USER_HOME/.pyenv/versions/venv/bin/activate \
     && . $USER_HOME/.pyenv/versions/venv/bin/activate \
     && cd /app \
+    # Install dependencies
     && pip install -r requirements.txt
 
 WORKDIR $APP
