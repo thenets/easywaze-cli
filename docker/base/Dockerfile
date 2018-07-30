@@ -34,6 +34,16 @@ RUN set -x \
     # Fix permissions
     && chown -R $USER_NAME.$USER_NAME $USER_HOME
 
+# Add source code and install dependencies
+ADD src/ app/
+RUN set -x \
+    && cd $USER_HOME/.pyenv/versions \
+    && virtualenv -p python3 venv \
+    && chmod +x $USER_HOME/.pyenv/versions/venv/bin/activate \
+    && . $USER_HOME/.pyenv/versions/venv/bin/activate \
+    && cd /app \
+    && pip install -r requirements.txt
+
 WORKDIR $APP
 ADD *.sh /
 ENTRYPOINT ["/entrypoint.sh"]

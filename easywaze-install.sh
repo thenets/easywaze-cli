@@ -11,6 +11,11 @@ fi
 
 export APP_NAME=easywaze
 
+if ! [ -x "$(command -v docker)" ]; then
+  "\e[33m# [WARN] Docker not found. Starting Docker installer...\e[0m"
+  curl -sSL https://get.docker.io | sh
+fi
+
 
 # User prompt to get config data
 echo "Type the city name (New York, São Paulo, ...):"
@@ -33,7 +38,7 @@ _EOF_
 # DEBUG
 #cat /opt/easywaze/config.yaml
 #set -x
-
+#exit
 
 # Create network
 echo -e "\e[32mCreating network...\e[0m"
@@ -74,3 +79,15 @@ docker rm -f $APP_NAME-redis >/dev/null 2>/dev/null || true
 echo -n $APP_NAME-redis:
 docker run --name $APP_NAME-redis --network=$APP_NAME \
 -d -t redis:alpine
+
+# Wating databases start
+echo -e "\e[32mWating databases start...\e[0m"
+sleep 30
+
+# Run main background process
+docker run -d --restart=unless-stopped \
+    --name $APP_NAME-main \
+    -v /opt/easywaze/config.yaml:/app/config.yaml \
+    --user=$USER_NAME \
+    --network $APP_NAME \
+    thenets/easywaze

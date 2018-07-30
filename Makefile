@@ -7,7 +7,7 @@ APP_NAME=easywaze
 USER_NAME=kratos
 USER_HOME=/home/$(USER_NAME)
 APP=/app
-SOURCE_PATH=src
+SOURCE_PATH=docker/base/src
 VOLUME_PATH=-v $(PWD)/$(SOURCE_PATH)/:/app/ \
 			-v $(APP_NAME)-venv:/home/kratos/.pyenv/versions
 
@@ -63,10 +63,11 @@ shell-root: basics
 # ==============================
 start-master: basics
 	@docker run --rm -it \
-		$(VOLUME_PATH) \
+		-v /opt/easywaze/config.yaml:/app/config.yaml \
 		-p 6000:6000 \
 		--user=$(USER_NAME) \
 		--network $(APP_NAME) \
+		$(NAME):$(TAG)
 
 # Dependencies
 # ==============================
