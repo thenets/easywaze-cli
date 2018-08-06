@@ -47,8 +47,26 @@ RUN set -x \
     # Install dependencies
     && pip install -r requirements.txt
 
-WORKDIR $APP
-ADD *.sh /
-ENTRYPOINT ["/entrypoint.sh"]
+# Install supervisor
+RUN set -x \
+    && apt-get update && apt-get install -y supervisor \
+    && apt-get clean all && apt-get autoclean \
+    && apt-get autoremove -y \ 
+    # Create log dir and Set permissions
+    && mkdir -p /var/log/supervisor \
+    && chown -R 1000.1000 /var/log/supervisor \
+    # Create dir for runners
+    && mkdir -p /etc/supervisor/conf.d/
+# Add conf files
+COPY supervisord.conf /etc/supervisord.conf
+ADD ./runners/*.conf /etc/supervisor/conf.d/
+ADD ./runners/*.sh /
+ADD supervisord.conf /etc/supervisord.conf
+# Fix permissions
+RUN set -x \
+    && chmod +x /*.sh \
+    && mkdir -p /var/log/easywaze/
 
-VOLUME ['/home/kratos/.pyenv/versions']
+ENTRYPOINT ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+
+VOLUME ["/home/kratos/.pyenv/versions"]

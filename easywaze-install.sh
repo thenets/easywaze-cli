@@ -11,9 +11,16 @@ fi
 
 export APP_NAME=easywaze
 
+# Install docker
 if ! [ -x "$(command -v docker)" ]; then
   "\e[33m# [WARN] Docker not found. Starting Docker installer...\e[0m"
   curl -sSL https://get.docker.io | sh
+fi
+
+# Install docker-compose
+if ! [ -x "$(command -v docker-compose)" ]; then
+  "\e[33m# [WARN] docker-compose not found. Downloading docker-compose installer...\e[0m"
+  curl -L https://github.com/docker/compose/releases/download/1.22.0/docker-compose-Linux-x86_64 -o /usr/local/bin/docker-compose
 fi
 
 
