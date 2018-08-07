@@ -65,7 +65,6 @@ start-master: basics
 	@docker run --rm -it \
 		-v /opt/easywaze/config.yaml:/app/config.yaml \
 		-p 6000:6000 \
-		--user=$(USER_NAME) \
 		--network $(APP_NAME) \
 		$(NAME):$(TAG)
 

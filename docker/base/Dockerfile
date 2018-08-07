@@ -34,18 +34,6 @@ RUN set -x \
     # Fix permissions
     && chown -R $USER_NAME.$USER_NAME $USER_HOME
 
-# Add source code and install dependencies
-RUN set -x \
-    # Clone from remote repo
-    && git clone https://github.com/CTS-FGV/easywaze.git /app \
-    # Install virtualenv
-    && cd $USER_HOME/.pyenv/versions \
-    && virtualenv -p python3 venv \
-    && chmod +x $USER_HOME/.pyenv/versions/venv/bin/activate \
-    && . $USER_HOME/.pyenv/versions/venv/bin/activate \
-    && cd /app \
-    # Install dependencies
-    && pip install -r requirements.txt
 
 # Install supervisor
 RUN set -x \
@@ -57,6 +45,22 @@ RUN set -x \
     && chown -R 1000.1000 /var/log/supervisor \
     # Create dir for runners
     && mkdir -p /etc/supervisor/conf.d/
+
+
+# Add source code and install dependencies
+RUN set -x \ 
+    # Clone from remote repo
+    && git clone https://github.com/CTS-FGV/easywaze.git /app     \
+    # Install virtualenv
+    && cd $USER_HOME/.pyenv/versions \
+    && virtualenv -p python3 venv \
+    && chmod +x $USER_HOME/.pyenv/versions/venv/bin/activate \
+    && . $USER_HOME/.pyenv/versions/venv/bin/activate \
+    && cd /app \
+    # Install dependencies
+    && pip install -r requirements.txt
+
+
 # Add conf files
 COPY supervisord.conf /etc/supervisord.conf
 ADD ./runners/*.conf /etc/supervisor/conf.d/
@@ -65,8 +69,9 @@ ADD supervisord.conf /etc/supervisord.conf
 # Fix permissions
 RUN set -x \
     && chmod +x /*.sh \
-    && mkdir -p /var/log/easywaze/
-
+    && mkdir -p /var/log/easywaze/ \
+    && chown 1000.1000 -R /app \
+    && chmod +x *.sh
 ENTRYPOINT ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
 
 VOLUME ["/home/kratos/.pyenv/versions"]
