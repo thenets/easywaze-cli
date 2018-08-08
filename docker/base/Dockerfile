@@ -50,7 +50,7 @@ RUN set -x \
 # Add source code and install dependencies
 RUN set -x \ 
     # Clone from remote repo
-    && git clone https://github.com/CTS-FGV/easywaze.git /app     \
+    && git clone  https://github.com/CTS-FGV/easywaze.git /app \
     # Install virtualenv
     && cd $USER_HOME/.pyenv/versions \
     && virtualenv -p python3 venv \
