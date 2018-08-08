@@ -48,6 +48,10 @@ chmod 777 /opt/easywaze/config.yaml
 #set -x
 #exit
 
+# Download latest EasyWaze image
+echo -e "\e[32mDownload latest EasyWaze image...\e[0m"
+docker pull thenets/easywaze
+
 # Create network
 echo -e "\e[32mCreating network...\e[0m"
 docker network create $APP_NAME >/dev/null 2>/dev/null || true
