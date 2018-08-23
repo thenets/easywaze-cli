@@ -50,7 +50,7 @@ chmod 777 /opt/easywaze/config.yaml
 
 # Download latest EasyWaze image
 echo -e "\e[32mDownload latest EasyWaze image...\e[0m"
-docker pull thenets/easywaze
+docker pull easywaze/extractor
 
 # Create network
 echo -e "\e[32mCreating network...\e[0m"
@@ -102,4 +102,4 @@ docker run -d --restart=unless-stopped \
     -v /opt/easywaze/config.yaml:/app/config.yaml \
     --user=$USER_NAME \
     --network $APP_NAME \
-    thenets/easywaze
+    easywaze/extractor
