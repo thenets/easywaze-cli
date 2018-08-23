@@ -97,6 +97,7 @@ echo -e "\e[32mWating databases start...\e[0m"
 sleep 30
 
 # Run main background process
+docker rm -f $APP_NAME-main >/dev/null 2>/dev/null || true
 docker run -d --restart=unless-stopped \
     --name $APP_NAME-main \
     -v /opt/easywaze/config.yaml:/app/config.yaml \
